@@ -1,15 +1,42 @@
-from typing import Dict
+from fastapi import APIRouter, HTTPException
 
-from fastapi import HTTPException, APIRouter
-
-from backend.handlers.user_handler import get_user_information_handler
+from backend.handlers.user_handler import UserHandler
 
 router = APIRouter()
 
-@router.get("/user/get_user_info")
-async def get_user_info(user_id: str):
+
+@router.post("/users")
+async def create_user(email: str, name: str):
     try:
-        response: Dict = await get_user_information_handler(user_id=user_id)
-        return response
-    except Exception as e:
-        raise HTTPException(500, f"Backend Error: {e}")
+        return await UserHandler.create_user(email, name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/users/{user_id}")
+async def get_user(user_id: str):
+    user = await UserHandler.get_user(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+
+@router.get("/users")
+async def list_users():
+    return UserHandler.list_users()
+
+
+@router.put("/users/{user_id}")
+async def update_user(user_id: str, name: str):
+    user = await UserHandler.update_user(user_id, name=name)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+
+@router.delete("/users/{user_id}")
+async def delete_user(user_id: str):
+    success = await UserHandler.delete_user(user_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"deleted": True}
